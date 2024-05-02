@@ -133,6 +133,9 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 case NFCReaderError.readerSessionInvalidationErrorUserCanceled:
                     Log.error( "     - User cancelled session" )
                     userError = NFCPassportReaderError.UserCanceled
+                case NFCReaderError.readerSessionInvalidationErrorSessionTimeout:
+                    Log.error("     - Timeout")
+                    userError = NFCPassportReaderError.TimeOutError
                 default:
                     Log.error( "     - some other error - \(readerError.localizedDescription)" )
                     userError = NFCPassportReaderError.UnexpectedError
@@ -197,10 +200,16 @@ extension PassportReader : NFCTagReaderSessionDelegate {
             } catch let error as NFCPassportReaderError {
                 let errorMessage = NFCViewDisplayMessage.error(error)
                 self.invalidateSession(errorMessage: errorMessage, error: error)
-            } catch let error {
-                Log.debug( "tagReaderSession:failed to connect to tag - \(error.localizedDescription)" )
-                let errorMessage = NFCViewDisplayMessage.error(NFCPassportReaderError.ConnectionError)
-                self.invalidateSession(errorMessage: errorMessage, error: NFCPassportReaderError.Unknown(error))
+            } catch {
+                if let nfcError = error as? NFCReaderError {
+                    if nfcError.errorCode == NFCReaderError.readerTransceiveErrorTagResponseError.rawValue {
+                        let errorMessage = NFCViewDisplayMessage.error(NFCPassportReaderError.ConnectionError)
+                        self.invalidateSession(errorMessage: errorMessage, error: NFCPassportReaderError.ConnectionError)
+                    }
+                } else {
+                    let errorMessage = NFCViewDisplayMessage.error(NFCPassportReaderError.Unknown(error))
+                    self.invalidateSession(errorMessage: errorMessage, error: NFCPassportReaderError.Unknown(error))
+                }
             }
         }
     }
