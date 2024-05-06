@@ -202,7 +202,9 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 self.invalidateSession(errorMessage: errorMessage, error: error)
             } catch {
                 if let nfcError = error as? NFCReaderError {
-                    if nfcError.errorCode == NFCReaderError.readerTransceiveErrorTagResponseError.rawValue {
+                    // .readerTransceiveErrorTagResponseError is thrown when a "connection lost" scenario is forced by moving the phone away from the NFC chip
+                    // .readerTransceiveErrorTagConnectionLost is never thrown for this scenario, but added for the sake of completeness
+                    if nfcError.errorCode == NFCReaderError.readerTransceiveErrorTagResponseError.rawValue || nfc.errorCode == NFCReaderError.readerTransceiveErrorTagConnectionLost.rawValue {
                         let errorMessage = NFCViewDisplayMessage.error(NFCPassportReaderError.ConnectionError)
                         self.invalidateSession(errorMessage: errorMessage, error: NFCPassportReaderError.ConnectionError)
                     }
