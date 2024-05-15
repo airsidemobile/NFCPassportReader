@@ -13,10 +13,16 @@ import UIKit
 import CoreNFC
 
 @available(iOS 15, *)
+public protocol PassportReaderDelegate: AnyObject {
+    func detectNFCTag()
+}
+
+@available(iOS 15, *)
 public class PassportReader : NSObject {
     private typealias NFCCheckedContinuation = CheckedContinuation<NFCPassportModel, Error>
     private var nfcContinuation: NFCCheckedContinuation?
 
+    public weak var trackingDelegate: PassportReaderDelegate?
     private var passport : NFCPassportModel = NFCPassportModel()
     
     private var readerSession: NFCTagReaderSession?
@@ -285,6 +291,7 @@ extension PassportReader {
     func doBACAuthentication(tagReader : TagReader) async throws {
         self.currentlyReadingDataGroup = nil
         
+        trackingDelegate?.detectNFCTag()
         Log.info( "Starting Basic Access Control (BAC)" )
         
         self.passport.BACStatus = .failed
