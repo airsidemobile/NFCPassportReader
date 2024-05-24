@@ -13,7 +13,7 @@ import UIKit
 import CoreNFC
 
 @available(iOS 15, *)
-public protocol PassportReaderDelegate: AnyObject {
+public protocol PassportReaderTrackingDelegate: AnyObject {
     func nfcTagDetected()
 }
 
@@ -22,7 +22,7 @@ public class PassportReader : NSObject {
     private typealias NFCCheckedContinuation = CheckedContinuation<NFCPassportModel, Error>
     private var nfcContinuation: NFCCheckedContinuation?
 
-    public weak var trackingDelegate: PassportReaderDelegate?
+    public weak var trackingDelegate: PassportReaderTrackingDelegate?
     private var passport : NFCPassportModel = NFCPassportModel()
     
     private var readerSession: NFCTagReaderSession?
