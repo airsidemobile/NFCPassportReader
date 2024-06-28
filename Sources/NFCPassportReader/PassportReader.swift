@@ -15,7 +15,7 @@ import CoreNFC
 @available(iOS 15, *)
 public protocol PassportReaderTrackingDelegate: AnyObject {
     func nfcTagDetected()
-    func readCardAccess(data: Data)
+    func readCardAccess(cardAccess: CardAccess)
     func paceStarted()
     func paceSucceeded()
     func paceFailed()
@@ -27,7 +27,7 @@ public protocol PassportReaderTrackingDelegate: AnyObject {
 @available(iOS 15, *)
 extension PassportReaderTrackingDelegate {
     func nfcTagDetected() { /* default implementation */ }
-    func readCardAccess(data: Data) { /* default implementation */ }
+    func readCardAccess(cardAccess: CardAccess) { /* default implementation */ }
     func paceStarted() { /* default implementation */ }
     func paceSucceeded() { /* default implementation */ }
     func paceFailed() { /* default implementation */ }
@@ -261,7 +261,7 @@ extension PassportReader {
                 let cardAccess = try CardAccess(data)
                 passport.cardAccess = cardAccess
 
-                trackingDelegate?.readCardAccess(data: Data(data))
+                trackingDelegate?.readCardAccess(cardAccess: cardAccess)
 
                 Log.info( "Starting Password Authenticated Connection Establishment (PACE)" )
                  
