@@ -23,6 +23,8 @@ public protocol PassportReaderTrackingDelegate: AnyObject {
     func bacStarted()
     func bacSucceeded()
     func bacFailed()
+    func trackSize(for dgId: DataGroupId, sizeInBytes size: Int)
+    func trackDataGroups(_ dataGroups: [DataGroupId])
 }
 
 @available(iOS 15, *)
@@ -35,6 +37,8 @@ extension PassportReaderTrackingDelegate {
     func bacStarted() { /* default implementation */ }
     func bacSucceeded() { /* default implementation */ }
     func bacFailed() { /* default implementation */ }
+    func trackSize(for dgId: DataGroupId, sizeInBytes size: Int) { /* default implementation */ }
+    func trackDataGroups(_ dataGroups: [DataGroupId]) { /* default implementation */ }
 }
 
 @available(iOS 15, *)
@@ -203,19 +207,19 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 try await session.connect(to: tag)
 
                 Logger.passportReader.debug( "tagReaderSession:connected to tag - starting authentication" )
-                self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(0) )
 
-                let tagReader = TagReader(tag:passportTag)
+                self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport )
+                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate)
 
                 if let newAmount = self.dataAmountToReadOverride {
                     tagReader.overrideDataAmountToRead(newAmount: newAmount)
                 }
 
-                tagReader.progress = { [unowned self] (progress) in
+                tagReader.bytesRead = { [unowned self] (bytesRead) in
                     if let dgId = self.currentlyReadingDataGroup {
-                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupProgress(dgId, progress) )
+                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupBytes(dgId, bytesRead) )
                     } else {
-                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(progress) )
+                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport )
                     }
                 }
 
@@ -268,12 +272,14 @@ extension PassportReader {
 
                 Logger.passportReader.info( "Starting Password Authenticated Connection Establishment (PACE)" )
 
-                let paceHandler = try PACEHandler( cardAccess: cardAccess, tagReader: tagReader )
+                let paceHandler = try PACEHandler( cardAccess: cardAccess, tagReader: tagReader, updateMessageHandler: updateReaderSessionMessage)
                 try await paceHandler.doPACE(mrzKey: mrzKey )
                 passport.PACEStatus = .success
                 Logger.passportReader.debug( "PACE Succeeded" )
 
                 trackingDelegate?.paceSucceeded()
+
+                self.updateReaderSessionMessage(alertMessage: NFCViewDisplayMessage.paceAuthenticationPercentage(100))
             } catch {
                 trackingDelegate?.paceFailed()
 
@@ -297,6 +303,8 @@ extension PassportReader {
 
                 throw error
             }
+
+            self.updateReaderSessionMessage(alertMessage: NFCViewDisplayMessage.successfulBACAuthentication)
         }
 
         // Now to read the datagroups
@@ -319,7 +327,6 @@ extension PassportReader {
         guard self.passport.activeAuthenticationSupported else {
             return
         }
-        self.updateReaderSessionMessage(alertMessage: NFCViewDisplayMessage.activeAuthentication)
 
         Logger.passportReader.info( "Performing Active Authentication" )
 
@@ -345,11 +352,9 @@ extension PassportReader {
     }
 
     func readDataGroups( tagReader: TagReader ) async throws {
-
-        // Read COM
+        // Read COM file first to get all present data groups
         var DGsToRead = [DataGroupId]()
 
-        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupProgress(.COM, 0) )
         if let com = try await readDataGroup(tagReader:tagReader, dgId:.COM) as? COM {
             self.passport.addDataGroup( .COM, dataGroup:com )
 
@@ -357,6 +362,19 @@ extension PassportReader {
             DGsToRead = [.SOD] + com.dataGroupsPresent.map { DataGroupId.getIDFromName(name:$0) }
             DGsToRead.removeAll { $0 == .COM }
         }
+
+        self.updateReaderSessionMessage(alertMessage: NFCViewDisplayMessage.successfulComFileRead)
+
+         // If we are skipping secure elements then remove .DG3 and .DG4
+        if self.skipSecureElements {
+            DGsToRead = DGsToRead.filter { $0 != .DG3 && $0 != .DG4 }
+        }
+
+        if self.readAllDatagroups != true {
+            DGsToRead = DGsToRead.filter { dataGroupsToRead.contains($0) }
+        }
+
+        self.trackingDelegate?.trackDataGroups(DGsToRead)
 
         if DGsToRead.contains( .DG14 ) {
             DGsToRead.removeAll { $0 == .DG14 }
@@ -381,19 +399,11 @@ extension PassportReader {
                         }
                     }
                 }
+                self.updateReaderSessionMessage(alertMessage: NFCViewDisplayMessage.successfulBACAuthentication)
             }
         }
 
-        // If we are skipping secure elements then remove .DG3 and .DG4
-        if self.skipSecureElements {
-            DGsToRead = DGsToRead.filter { $0 != .DG3 && $0 != .DG4 }
-        }
-
-        if self.readAllDatagroups != true {
-            DGsToRead = DGsToRead.filter { dataGroupsToRead.contains($0) }
-        }
         for dgId in DGsToRead {
-            self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupProgress(dgId, 0) )
             if let dg = try await readDataGroup(tagReader:tagReader, dgId:dgId) {
                 self.passport.addDataGroup( dgId, dataGroup:dg )
             }
@@ -406,8 +416,6 @@ extension PassportReader {
         Logger.passportReader.info( "Reading tag - \(dgId.getName())" )
         var readAttempts = 0
         var nfcPassportReaderError: NFCPassportReaderError
-
-        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupProgress(dgId, 0) )
 
         repeat {
             do {

@@ -46,6 +46,7 @@ public class PACEHandler {
 
     var tagReader : TagReader
     var paceInfo : PACEInfo
+    var updateMessageHandler: ((NFCViewDisplayMessage) -> Void?)?
     
     var isPACESupported : Bool = false
     var paceError : String = ""
@@ -61,7 +62,7 @@ public class PACEHandler {
     private var digestAlg : String = ""
     private var keyLength : Int = -1
     
-    public init(cardAccess : CardAccess, tagReader: TagReader) throws {
+    public init(cardAccess : CardAccess, tagReader: TagReader, updateMessageHandler : ((NFCViewDisplayMessage) -> Void?)?) throws {
         self.tagReader = tagReader
         
         guard let pi = cardAccess.paceInfo else {
@@ -69,6 +70,7 @@ public class PACEHandler {
         }
 
         self.paceInfo = pi
+        self.updateMessageHandler = updateMessageHandler
         isPACESupported = true
     }
     
@@ -171,6 +173,7 @@ public class PACEHandler {
     /// - Parameters:
     ///   - passportNonce: The decrypted nonce received from the passport
     func doStep2( passportNonce: [UInt8]) async throws -> OpaquePointer {
+        self.updateMessageHandler?(NFCViewDisplayMessage.paceAuthenticationPercentage(40))
         Logger.pace.debug( "Doing PACE Step2...")
         switch(mappingType) {
             case .CAM, .GM:
@@ -228,6 +231,8 @@ public class PACEHandler {
         } else {
             throw NFCPassportReaderError.PACEError( "Step2GM", "Unsupported agreement algorithm" )
         }
+
+        self.updateMessageHandler?(NFCViewDisplayMessage.paceAuthenticationPercentage(80))
 
         // Need to free the mapping key we created now
         EVP_PKEY_free(mappingKey)

@@ -101,5 +101,29 @@ public enum DataGroupId : Int, CaseIterable {
             case .Unknown:  return nil
         }
     }
+    
+    static func getIDFromTag(_ tag: [UInt8]) -> DataGroupId {
+        switch tag {
+            case [0x01, 0x1E]: return .COM
+            case [0x01, 0x01]: return .DG1
+            case [0x01, 0x02]: return .DG2
+            case [0x01, 0x03]: return .DG3
+            case [0x01, 0x04]: return .DG4
+            case [0x01, 0x05]: return .DG5
+            case [0x01, 0x06]: return .DG6
+            case [0x01, 0x07]: return .DG7
+            case [0x01, 0x08]: return .DG8
+            case [0x01, 0x09]: return .DG9
+            case [0x01, 0x0A]: return .DG10
+            case [0x01, 0x0B]: return .DG11
+            case [0x01, 0x0C]: return .DG12
+            case [0x01, 0x0D]: return .DG13
+            case [0x01, 0x0E]: return .DG14
+            case [0x01, 0x0F]: return .DG15
+            case [0x01, 0x10]: return .DG16
+            case [0x01, 0x1D]: return .SOD
+            default: return .Unknown
+        }
+    }
 }
 

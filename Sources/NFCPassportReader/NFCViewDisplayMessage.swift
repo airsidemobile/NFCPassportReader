@@ -10,10 +10,12 @@ import Foundation
 @available(iOS 13, macOS 10.15, *)
 public enum NFCViewDisplayMessage {
     case requestPresentPassport
-    case authenticatingWithPassport(Int)
-    case readingDataGroupProgress(DataGroupId, Int)
+    case authenticatingWithPassport
+    case paceAuthenticationPercentage(Int)
+    case successfulBACAuthentication
+    case successfulComFileRead
+    case readingDataGroupBytes(DataGroupId, Int)
     case error(NFCPassportReaderError)
-    case activeAuthentication
     case successfulRead
 }
 
@@ -23,12 +25,16 @@ extension NFCViewDisplayMessage {
         switch self {
             case .requestPresentPassport:
                 return "Hold your iPhone near an NFC enabled passport."
-            case .authenticatingWithPassport(let progress):
-                let progressString = handleProgress(percentualProgress: progress)
-                return "Authenticating with passport.....\n\n\(progressString)"
-            case .readingDataGroupProgress(let dataGroup, let progress):
-                let progressString = handleProgress(percentualProgress: progress)
-                return "Reading \(dataGroup).....\n\n\(progressString)"
+            case .authenticatingWithPassport:
+                return "Authenticating with passport....."
+            case .paceAuthenticationPercentage(let percentage):
+                return "PACE authentication progress: \(percentage)%"
+            case .successfulBACAuthentication:
+                return "Passport authentication successful."
+            case .successfulComFileRead:
+                return "COM file read successful."
+            case .readingDataGroupBytes(let dataGroup, let byteSize):
+                return "Reading \(dataGroup)....."
             case .error(let tagError):
                 switch tagError {
                     case NFCPassportReaderError.TagNotValid:
@@ -44,17 +50,8 @@ extension NFCViewDisplayMessage {
                     default:
                         return "Sorry, there was a problem reading the passport. Please try again"
                 }
-            case .activeAuthentication:
-                return "Authenticating....."
             case .successfulRead:
                 return "Passport read successfully"
         }
-    }
-    
-    func handleProgress(percentualProgress: Int) -> String {
-        let p = (percentualProgress/20)
-        let full = String(repeating: "🟢 ", count: p)
-        let empty = String(repeating: "⚪️ ", count: 5-p)
-        return "\(full)\(empty)"
     }
 }
