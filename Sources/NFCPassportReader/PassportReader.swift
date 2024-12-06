@@ -209,7 +209,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 Logger.passportReader.debug( "tagReaderSession:connected to tag - starting authentication" )
 
                 self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport )
-                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate)
+                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate, useExtendedMode: useExtendedMode)
 
                 if let newAmount = self.dataAmountToReadOverride {
                     tagReader.overrideDataAmountToRead(newAmount: newAmount)
@@ -332,7 +332,7 @@ extension PassportReader {
 
         let challenge = generateRandomUInt8Array(8)
         Logger.passportReader.debug( "Generated Active Authentication challange - \(binToHexRep(challenge))")
-        let response = try await tagReader.doInternalAuthentication(challenge: challenge, useExtendedMode: useExtendedMode)
+        let response = try await tagReader.doInternalAuthentication(challenge: challenge)
         self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
     }
 
