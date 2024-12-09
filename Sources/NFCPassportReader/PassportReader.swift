@@ -25,6 +25,7 @@ public protocol PassportReaderTrackingDelegate: AnyObject {
     func bacFailed()
     func trackSize(for dgId: DataGroupId, sizeInBytes size: Int)
     func trackDataGroups(_ dataGroups: [DataGroupId])
+    func trackMaxDataLengthToRead(_ maxDataLength: Int)
 }
 
 @available(iOS 15, *)
@@ -38,7 +39,8 @@ extension PassportReaderTrackingDelegate {
     func bacSucceeded() { /* default implementation */ }
     func bacFailed() { /* default implementation */ }
     func trackSize(for dgId: DataGroupId, sizeInBytes size: Int) { /* default implementation */ }
-    func trackDataGroups(_ dataGroups: [DataGroupId]) { /* default implementation */ }
+    func trackDataGroups(_ dataGroups: [DataGroupId]) { /* default implementation */ }.
+    func trackMaxDataLengthToRead(_ maxDataLength: Int) { /* default implementation */ }
 }
 
 @available(iOS 15, *)
@@ -309,6 +311,7 @@ extension PassportReader {
 
         // Now to read the datagroups
         try await readDataGroups(tagReader: tagReader)
+        trackingDelegate?.trackMaxDataLengthToRead(tagReader.maxDataLengthToRead)
 
         try await doActiveAuthenticationIfNeccessary(tagReader : tagReader)
 
