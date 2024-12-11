@@ -46,7 +46,7 @@ public class PACEHandler {
 
     var tagReader : TagReader
     var paceInfo : PACEInfo
-    var updateMessageHandler: ((NFCViewDisplayMessage) -> Void?)?
+    var updateMessageHandler: ((NFCViewDisplayMessage) -> Void)?
     
     var isPACESupported : Bool = false
     var paceError : String = ""
@@ -62,7 +62,7 @@ public class PACEHandler {
     private var digestAlg : String = ""
     private var keyLength : Int = -1
     
-    public init(cardAccess : CardAccess, tagReader: TagReader, updateMessageHandler : ((NFCViewDisplayMessage) -> Void?)?) throws {
+    public init(cardAccess : CardAccess, tagReader: TagReader, updateMessageHandler : ((NFCViewDisplayMessage) -> Void)?) throws {
         self.tagReader = tagReader
         
         guard let pi = cardAccess.paceInfo else {
