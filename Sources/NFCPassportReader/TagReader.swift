@@ -23,7 +23,7 @@ public class TagReader {
     
     var bytesRead : ((Int)->())?
 
-    init( tag: NFCISO7816Tag, trackingDelegate: PassportReaderTrackingDelegate? ) {
+    init( tag: NFCISO7816Tag, trackingDelegate: PassportReaderTrackingDelegate? = nil ) {
         self.tag = tag
         self.trackingDelegate = trackingDelegate
     }

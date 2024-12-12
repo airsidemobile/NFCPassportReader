@@ -208,7 +208,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
 
                 Logger.passportReader.debug( "tagReaderSession:connected to tag - starting authentication" )
 
-                self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport )
+                self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(0) )
                 let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate)
 
                 if let newAmount = self.dataAmountToReadOverride {
@@ -219,7 +219,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                     if let dgId = self.currentlyReadingDataGroup {
                         self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.readingDataGroupBytes(dgId, bytesRead) )
                     } else {
-                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport )
+                        self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(bytesRead) )
                     }
                 }
 
