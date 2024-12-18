@@ -18,10 +18,14 @@ public class TagReader {
     var secureMessaging : SecureMessaging?
     var maxDataLengthToRead : Int = 0xA0  // Should be able to use 256 to read arbitrary amounts of data at full speed BUT this isn't supported across all passports so for reliability just use the smaller amount.
 
-    var progress : ((Int)->())?
+    
+    weak var trackingDelegate: PassportReaderTrackingDelegate?
+    
+    var bytesRead : ((Int)->())?
 
-    init( tag: NFCISO7816Tag ) {
+    init( tag: NFCISO7816Tag, trackingDelegate: PassportReaderTrackingDelegate? = nil ) {
         self.tag = tag
+        self.trackingDelegate = trackingDelegate
     }
     
     func overrideDataAmountToRead( newAmount : Int ) {
@@ -180,6 +184,13 @@ public class TagReader {
         let (len, o) = try! asn1Length([UInt8](resp.data[1..<4]))
         var remaining = Int(len)
         var amountRead = o + 1
+        let totalSize = remaining + amountRead
+
+        if case let dataGroupId = DataGroupId.getIDFromTag(tag), dataGroupId != .Unknown {
+            self.trackingDelegate?.trackSize(for: dataGroupId, sizeInBytes: totalSize)
+        }
+
+        self.bytesRead?(amountRead)
         
         var data = [UInt8](resp.data[..<amountRead])
         
@@ -191,7 +202,6 @@ public class TagReader {
                 readAmount = remaining
             }
 
-            self.progress?( Int(Float(amountRead) / Float(remaining+amountRead ) * 100))
             let offset = intToBin(amountRead, pad:4)
 
             Logger.tagReader.debug( "TagReader - data bytes remaining: \(remaining), will read : \(readAmount)" )
@@ -210,7 +220,11 @@ public class TagReader {
             
             remaining -= resp.data.count
             amountRead += resp.data.count
+
+            Logger.tagReader.debug( "TagReader - Read \(resp.data.count) bytes" )
             Logger.tagReader.debug( "TagReader - Amount of data left to read - \(remaining)" )
+
+            self.bytesRead?(resp.data.count)
         }
         
         return data

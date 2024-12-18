@@ -101,5 +101,29 @@ public enum DataGroupId : Int, CaseIterable {
             case .Unknown:  return nil
         }
     }
+    
+    static func getIDFromTag(_ tag: [UInt8]) -> DataGroupId {
+        switch tag {
+            case DataGroupId.COM.getFileIDTag(): return .COM
+            case DataGroupId.DG1.getFileIDTag(): return .DG1
+            case DataGroupId.DG2.getFileIDTag(): return .DG2
+            case DataGroupId.DG3.getFileIDTag(): return .DG3
+            case DataGroupId.DG4.getFileIDTag(): return .DG4
+            case DataGroupId.DG5.getFileIDTag(): return .DG5
+            case DataGroupId.DG6.getFileIDTag(): return .DG6
+            case DataGroupId.DG7.getFileIDTag(): return .DG7
+            case DataGroupId.DG8.getFileIDTag(): return .DG8
+            case DataGroupId.DG9.getFileIDTag(): return .DG9
+            case DataGroupId.DG10.getFileIDTag(): return .DG10
+            case DataGroupId.DG11.getFileIDTag(): return .DG11
+            case DataGroupId.DG12.getFileIDTag(): return .DG12
+            case DataGroupId.DG13.getFileIDTag(): return .DG13
+            case DataGroupId.DG14.getFileIDTag(): return .DG14
+            case DataGroupId.DG15.getFileIDTag(): return .DG15
+            case DataGroupId.DG16.getFileIDTag(): return .DG16
+            case DataGroupId.SOD.getFileIDTag(): return .SOD
+            default: return .Unknown
+        }
+    }
 }
 
