@@ -10,7 +10,7 @@ import Foundation
 @available(iOS 13, macOS 10.15, *)
 public enum NFCViewDisplayMessage {
     case requestPresentPassport
-    case authenticatingWithPassport
+    case authenticatingWithPassport(Int)
     case paceAuthenticationPercentage(Int)
     case successfulBACAuthentication
     case successfulComFileRead
@@ -25,7 +25,7 @@ extension NFCViewDisplayMessage {
         switch self {
             case .requestPresentPassport:
                 return "Hold your iPhone near an NFC enabled passport."
-            case .authenticatingWithPassport:
+            case .authenticatingWithPassport(_):
                 return "Authenticating with passport....."
             case .paceAuthenticationPercentage(let percentage):
                 return "PACE authentication progress: \(percentage)%"
@@ -33,7 +33,7 @@ extension NFCViewDisplayMessage {
                 return "Passport authentication successful."
             case .successfulComFileRead:
                 return "COM file read successful."
-            case .readingDataGroupBytes(let dataGroup, let byteSize):
+            case .readingDataGroupBytes(let dataGroup, _):
                 return "Reading \(dataGroup)....."
             case .error(let tagError):
                 switch tagError {
