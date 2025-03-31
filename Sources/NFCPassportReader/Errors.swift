@@ -21,13 +21,9 @@ public enum NFCPassportReaderError: Error {
     case MissingMandatoryFields
     case CannotDecodeASN1Length
     case InvalidASN1Value
-    case UnableToProtectAPDU
-    case UnableToUnprotectAPDU
     case UnsupportedDataGroup
-    case DataGroupNotRead
     case UnknownTag
     case UnknownImageFormat
-    case NotImplemented
     case TagNotValid
     case ConnectionError
     case TimeOutError
@@ -36,7 +32,6 @@ public enum NFCPassportReaderError: Error {
     case MoreThanOneTagFound
     case InvalidHashAlgorithmSpecified
     case UnsupportedCipherAlgorithm
-    case UnsupportedMappingType
     case PACEError(String,String)
     case ChipAuthenticationFailed
     case InvalidDataPassed(String)
@@ -56,13 +51,9 @@ public enum NFCPassportReaderError: Error {
             case .MissingMandatoryFields: return "MissingMandatoryFields"
             case .CannotDecodeASN1Length: return "CannotDecodeASN1Length"
             case .InvalidASN1Value: return "InvalidASN1Value"
-            case .UnableToProtectAPDU: return "UnableToProtectAPDU"
-            case .UnableToUnprotectAPDU: return "UnableToUnprotectAPDU"
             case .UnsupportedDataGroup: return "UnsupportedDataGroup"
-            case .DataGroupNotRead: return "DataGroupNotRead"
             case .UnknownTag: return "UnknownTag"
             case .UnknownImageFormat: return "UnknownImageFormat"
-            case .NotImplemented: return "NotImplemented"
             case .TagNotValid: return "TagNotValid"
             case .ConnectionError: return "ConnectionError"
             case .TimeOutError: return "TimeOutError"
@@ -71,7 +62,6 @@ public enum NFCPassportReaderError: Error {
             case .MoreThanOneTagFound: return "MoreThanOneTagFound"
             case .InvalidHashAlgorithmSpecified: return "InvalidHashAlgorithmSpecified"
             case .UnsupportedCipherAlgorithm: return "UnsupportedCipherAlgorithm"
-            case .UnsupportedMappingType: return "UnsupportedMappingType"
             case .PACEError(let step, let reason): return "PACEError (\(step)) - \(reason)"
             case .ChipAuthenticationFailed: return "ChipAuthenticationFailed"
             case .InvalidDataPassed(let reason) : return "Invalid data passed - \(reason)"
