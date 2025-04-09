@@ -25,7 +25,6 @@ public protocol PassportReaderTrackingDelegate: AnyObject {
     func bacFailed()
     func trackSize(for dgId: DataGroupId, sizeInBytes size: Int)
     func trackDataGroups(_ dataGroups: [DataGroupId])
-    func trackMaxDataLengthToRead(_ maxDataLength: Int)
 }
 
 @available(iOS 15, *)
@@ -40,7 +39,6 @@ extension PassportReaderTrackingDelegate {
     func bacFailed() { /* default implementation */ }
     func trackSize(for dgId: DataGroupId, sizeInBytes size: Int) { /* default implementation */ }
     func trackDataGroups(_ dataGroups: [DataGroupId]) { /* default implementation */ }
-    func trackMaxDataLengthToRead(_ maxDataLength: Int) { /* default implementation */ }
 }
 
 @available(iOS 15, *)
@@ -211,7 +209,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 Logger.passportReader.debug( "tagReaderSession:connected to tag - starting authentication" )
 
                 self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(0) )
-                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate, useExtendedMode: useExtendedMode)
+                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate)
 
                 if let newAmount = self.dataAmountToReadOverride {
                     tagReader.overrideDataAmountToRead(newAmount: newAmount)
@@ -311,7 +309,6 @@ extension PassportReader {
 
         // Now to read the datagroups
         try await readDataGroups(tagReader: tagReader)
-        trackingDelegate?.trackMaxDataLengthToRead(tagReader.maxDataLengthToRead)
 
         try await doActiveAuthenticationIfNeccessary(tagReader : tagReader)
 
@@ -335,7 +332,7 @@ extension PassportReader {
 
         let challenge = generateRandomUInt8Array(8)
         Logger.passportReader.debug( "Generated Active Authentication challange - \(binToHexRep(challenge))")
-        let response = try await tagReader.doInternalAuthentication(challenge: challenge)
+        let response = try await tagReader.doInternalAuthentication(challenge: challenge, useExtendedMode: useExtendedMode)
         self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
     }
 
@@ -464,7 +461,7 @@ extension PassportReader {
                 }
             }
             readAttempts += 1
-        } while ( readAttempts < 3 )
+        } while ( readAttempts < 2 )
 
         // The error will be thrown after n attempts
         throw nfcPassportReaderError
