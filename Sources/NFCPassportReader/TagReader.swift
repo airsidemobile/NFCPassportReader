@@ -64,7 +64,7 @@ public class TagReader {
         
         let cmd = NFCISO7816APDU(instructionClass: 00, instructionCode: 0x88, p1Parameter: 0, p2Parameter: 0, data: randNonce, expectedResponseLength: responseLength)
 
-        return try await send( cmd: cmd, useExtendedMode: useExtendedMode )
+        return try await send( cmd: cmd )
     }
 
     func doMutualAuthentication( cmdData : Data ) async throws -> ResponseAPDU{
