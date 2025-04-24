@@ -300,7 +300,7 @@ public class TagReader {
             
         }
         
-        // remove padding if there is any
+        // Remove padding if there is any
         if cmd.expectedResponseLength > 0 && rep.data.count > cmd.expectedResponseLength {
             while let last = rep.data.last, last == 0xFF, rep.data.count > cmd.expectedResponseLength {
                 rep.data.removeLast()
