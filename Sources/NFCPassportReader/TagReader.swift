@@ -23,24 +23,20 @@ public class TagReader {
     
     var bytesRead : ((Int)->())?
 
-    init( tag: NFCISO7816Tag, trackingDelegate: PassportReaderTrackingDelegate? = nil, useExtendedMode: Bool ) {
+    init(
+        tag: NFCISO7816Tag,
+        useExtendedMode: Bool,
+        trackingDelegate: PassportReaderTrackingDelegate? = nil,
+        maxDataLengthToRead: Int? = nil
+    ) {
         self.tag = tag
-        self.trackingDelegate = trackingDelegate
         self.useExtendedMode = useExtendedMode
-        self.maxDataLengthToRead = useExtendedMode ? 0xFFFF : 0xFF
+        self.trackingDelegate = trackingDelegate
+        self.maxDataLengthToRead = maxDataLengthToRead ?? (useExtendedMode ? 0x10000 : 0x100)
     }
     
     func overrideDataAmountToRead( newAmount : Int ) {
         maxDataLengthToRead = newAmount
-    }
-    
-    func reduceDataReadingAmount() {
-        if useExtendedMode {
-            maxDataLengthToRead = 0xFF
-            useExtendedMode = false
-        } else if maxDataLengthToRead > 0xA0 {
-            maxDataLengthToRead = 0xA0
-        }
     }
 
 
@@ -58,11 +54,17 @@ public class TagReader {
         return try await send( cmd: cmd )
     }
     
-    func doInternalAuthentication( challenge: [UInt8] ) async throws -> ResponseAPDU {
+    func doInternalAuthentication( challenge: [UInt8], useExtendedMode: Bool ) async throws -> ResponseAPDU {
         let randNonce = Data(challenge)
-        let cmd = NFCISO7816APDU(instructionClass: 00, instructionCode: 0x88, p1Parameter: 0, p2Parameter: 0, data: randNonce, expectedResponseLength: maxDataLengthToRead)
-      
-        return try await send( cmd: cmd )
+        
+        var responseLength = 256
+        if useExtendedMode {
+            responseLength = 65535
+        }
+        
+        let cmd = NFCISO7816APDU(instructionClass: 00, instructionCode: 0x88, p1Parameter: 0, p2Parameter: 0, data: randNonce, expectedResponseLength: responseLength)
+
+        return try await send( cmd: cmd, useExtendedMode: useExtendedMode )
     }
 
     func doMutualAuthentication( cmdData : Data ) async throws -> ResponseAPDU{
@@ -300,12 +302,12 @@ public class TagReader {
         
         // remove padding if there is any
         if cmd.expectedResponseLength > 0 && rep.data.count > cmd.expectedResponseLength {
-            while let last = rep.data.last, last == 0xFF {
+            while let last = rep.data.last, last == 0xFF, rep.data.count > cmd.expectedResponseLength {
                 rep.data.removeLast()
             }
         }
         
-        if !((rep.sw1 == 0x90 && rep.sw2 == 0x00) || (rep.sw1 == 0x62 && rep.sw2 == 0x82)) {
+        if !(isSuccess(sw1: rep.sw1, sw2: rep.sw2) || isEOFReachedWarning(sw1: rep.sw1, sw2: rep.sw2)) {
             Logger.tagReader.debug( "Error reading tag: sw1 - 0x\(binToHexRep(sw1)), sw2 - 0x\(binToHexRep(sw2))" )
             let tagError: NFCPassportReaderError
             if (rep.sw1 == 0x63 && rep.sw2 == 0x00) {
@@ -319,6 +321,14 @@ public class TagReader {
         }
 
         return rep
+    }
+    
+    private func isSuccess(sw1: UInt8, sw2: UInt8) -> Bool {
+        return sw1 == 0x90 && sw2 == 0x00
+    }
+
+    private func isEOFReachedWarning(sw1: UInt8, sw2: UInt8) -> Bool {
+        return sw1 == 0x62 && sw2 == 0x82
     }
 
     private func decodeError( sw1: UInt8, sw2:UInt8 ) -> String {

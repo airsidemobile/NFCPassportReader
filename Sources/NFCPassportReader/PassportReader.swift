@@ -211,7 +211,7 @@ extension PassportReader : NFCTagReaderSessionDelegate {
                 Logger.passportReader.debug( "tagReaderSession:connected to tag - starting authentication" )
 
                 self.updateReaderSessionMessage( alertMessage: NFCViewDisplayMessage.authenticatingWithPassport(0) )
-                let tagReader = TagReader(tag: passportTag, trackingDelegate: trackingDelegate, useExtendedMode: useExtendedMode)
+                let tagReader = TagReader(tag: passportTag, useExtendedMode: useExtendedMode, trackingDelegate: trackingDelegate, maxDatalengthToRead: dataAmountToReadOverride)
 
                 if let newAmount = self.dataAmountToReadOverride {
                     tagReader.overrideDataAmountToRead(newAmount: newAmount)
@@ -335,7 +335,7 @@ extension PassportReader {
 
         let challenge = generateRandomUInt8Array(8)
         Logger.passportReader.debug( "Generated Active Authentication challange - \(binToHexRep(challenge))")
-        let response = try await tagReader.doInternalAuthentication(challenge: challenge)
+        let response = try await tagReader.doInternalAuthentication(challenge: challenge, useExtendedMode: useExtendedMode)
         self.passport.verifyActiveAuthentication( challenge:challenge, signature:response.data )
     }
 
@@ -452,7 +452,7 @@ extension PassportReader {
                     redoBAC = true
                 } else if errMsg.hasPrefix( "Wrong length" ) || errMsg.hasPrefix( "End of file" ) {  // Should now handle errors 0x6C xx, and 0x67 0x00
                     // OK passport can't handle max length so drop it down
-                    tagReader.reduceDataReadingAmount()
+                    reduceDataReadingAmount(for: tagReader)
                     redoBAC = true
                 }
 
@@ -477,6 +477,20 @@ extension PassportReader {
         self.readerSession?.invalidate(errorMessage: self.nfcViewDisplayMessageHandler?(errorMessage) ?? errorMessage.description)
         nfcContinuation?.resume(throwing: error)
         nfcContinuation = nil
+    }
+    
+    private func reduceDataReadingAmount(for tagReader: TagReader) {
+        var newAmount = tagReader.maxDataLengthToRead
+        
+        if self.useExtendedMode {
+            self.useExtendedMode = false
+            newAmount = 0x100
+        } else if tagReader.maxDataLengthToRead > 0xA0 {
+            newAmount = 0xA0
+        }
+        
+        self.overrideNFCDataAmountToRead(amount: newAmount)
+        tagReader.overrideDataAmountToRead(newAmount: newAmount)
     }
 }
 #endif
