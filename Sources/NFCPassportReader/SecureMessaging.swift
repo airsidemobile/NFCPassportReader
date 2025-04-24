@@ -125,7 +125,7 @@ public class SecureMessaging {
         Logger.secureMessaging.debug("\t\tSSC: \(binToHexRep(self.ssc))")
                 
         // Check for a SM error
-        if(rapdu.sw1 != 0x90 || rapdu.sw2 != 0x00) {
+        if (rapdu.sw1 != 0x90 || rapdu.sw2 != 0x00) && (rapdu.sw1 != 0x62 && rapdu.sw2 != 0x82) {
             return rapdu
         }
 
